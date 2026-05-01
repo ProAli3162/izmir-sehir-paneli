@@ -362,15 +362,15 @@
     }
 
     .grid-2 {
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
 
     .grid-3 {
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
 
     .grid-4 {
-      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     }
 
     .card {
@@ -2159,9 +2159,9 @@
         </div>
       </div>
 
-      <div id="dashboard-sortable-container" style="display:flex;flex-direction:column;gap:18px">
+      <div id="dashboard-sortable-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 18px; align-items: start;">
         <!-- 1: İstatistikler -->
-        <div class="dash-panel" data-id="panel-stats">
+        <div class="dash-panel" data-id="panel-stats" style="grid-column: 1 / -1;">
           <div class="grid grid-3" id="dashboard-stats">
             <div class="card card-blue">
               <div class="spinner-wrap">
@@ -2182,7 +2182,7 @@
         </div>
 
         <!-- 2: Hava / Baraj -->
-        <div class="dash-panel" data-id="panel-weather">
+        <div class="dash-panel" data-id="panel-weather" style="grid-column: 1 / -1;">
           <div class="grid grid-2">
             <div class="card card-blue" id="dash-weather-card">
               <div class="card-title">🌤️ Hava Durumu — İzmir</div>
@@ -2204,7 +2204,7 @@
           <div class="card card-red" style="border-left: 4px solid var(--red)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <div class="card-title" style="margin:0">⚠️ Bölgesel Kesintiler</div>
-              <select id="dash-kesinti-ilce" class="inp" style="width:140px;padding:4px 8px;font-size:12px"
+              <select id="dash-kesinti-ilce" class="inp" style="flex: none; width: auto; min-width: 200px; max-width: max-content; padding:4px 8px; font-size:12px"
                 onchange="loadDashKesinti()">
                 <option value="">İzmir Geneli</option>
                 <option value="ALİAĞA">Aliağa</option>
@@ -2852,7 +2852,7 @@
     let eczaneMap, taksiMap, sukMap, elekMap, otobusMap, trenMap, yakinMap;
     let eczaneMarkers = [], taksiAllData = [];
     let eczaneMode = 'nobetci';
-    let iskeleler = [];
+    let iskeleler = []; let vapurRouteLine = null;
     let selectedHatNo = null, selectedDurakId = null;
     let otobusMarkers = [], durakMarkers = [];
     let otobusRefreshTimer = null;
@@ -3865,7 +3865,7 @@
     async function loadVapur() {
       const res = await apiFetch('/api/vapuriskeleleri');
       if (!res.ok) return;
-      const iskeleler = res.data || [];
+      iskeleler = res.data || [];
       const opts = iskeleler.map(isk => `<option value="${isk.IskeleId || isk.Id}">${isk.Adi || isk.IskeleAdi}</option>`).join('');
       document.getElementById('vapur-kalkis').innerHTML = '<option value="">Kalkış İskelesi Seçin</option>' + opts;
       document.getElementById('vapur-varis').innerHTML = '<option value="">Varış İskelesi Seçin</option>' + opts;
@@ -3912,6 +3912,27 @@
       const varis = document.getElementById('vapur-varis').value;
       const gun = document.getElementById('vapur-gun').value;
       if (!kalkis || !varis) return;
+
+      // --- YENİ EKLENEN ÇİZGİ VE ZOOM KODU BAŞLANGICI ---
+      if (vapurRouteLine && vapurMap) { vapurMap.removeLayer(vapurRouteLine); }
+      const kPier = iskeleler.find(i => (i.IskeleId || i.Id) == kalkis);
+      const vPier = iskeleler.find(i => (i.IskeleId || i.Id) == varis);
+      
+      if (kPier && vPier && kPier.Enlem && vPier.Enlem && vapurMap) {
+        const latlngs = [
+          [parseFloat(kPier.Enlem), parseFloat(kPier.Boylam)],
+          [parseFloat(vPier.Enlem), parseFloat(vPier.Boylam)]
+        ];
+        vapurRouteLine = L.polyline(latlngs, {
+          color: 'var(--teal)',
+          weight: 4,
+          dashArray: '10, 10', // Kesik çizgi yapar
+          opacity: 0.8
+        }).addTo(vapurMap);
+        vapurMap.fitBounds(L.latLngBounds(latlngs).pad(0.3));
+      }
+      // --- YENİ EKLENEN KOD BİTİŞİ ---
+
       const content = document.getElementById('vapur-content');
       content.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><div>Sorgulanıyor...</div></div>';
       const res = await apiFetch(`/api/vapursaatleri?kalkis=${kalkis}&varis=${varis}&gunId=${gun}`);
@@ -4774,6 +4795,7 @@
 
     async function loadDashKesinti() {
       const ilce = document.getElementById('dash-kesinti-ilce').value;
+      localStorage.setItem('dash_kesinti_ilce', ilce);
       const el = document.getElementById('dash-kesinti-content');
       el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
 
@@ -5097,6 +5119,11 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       initDashboardSortable();
+      const savedIlce = localStorage.getItem('dash_kesinti_ilce');
+      if (savedIlce) {
+        const sel = document.getElementById('dash-kesinti-ilce');
+        if (sel) sel.value = savedIlce;
+      }
       loadDashKesinti();
     });
 
