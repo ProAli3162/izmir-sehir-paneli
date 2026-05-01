@@ -619,6 +619,19 @@
       #durak-list {
         max-height: 250px !important;
       }
+
+      #page-otobus .card {
+        height: auto !important;
+      }
+
+      #otobus-map-wrap {
+        height: 400px !important;
+      }
+
+      .otobus-grid>div:last-child {
+        order: -1;
+        margin-bottom: 16px;
+      }
     }
 
     .fav-btn-small {
@@ -2044,13 +2057,15 @@
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     }
 
-    #page-otobus {
-      max-height: calc(100vh - 100px);
-      overflow: hidden;
-    }
+    @media (min-width: 901px) {
+      #page-otobus {
+        max-height: calc(100vh - 100px);
+        overflow: hidden;
+      }
 
-    #page-otobus .otobus-grid {
-      height: 100%;
+      #page-otobus .otobus-grid {
+        height: 100%;
+      }
     }
   </style>
 </head>
@@ -2159,7 +2174,8 @@
         </div>
       </div>
 
-      <div id="dashboard-sortable-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 18px; align-items: start;">
+      <div id="dashboard-sortable-container"
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 18px; align-items: start;">
         <!-- 1: İstatistikler -->
         <div class="dash-panel" data-id="panel-stats" style="grid-column: 1 / -1;">
           <div class="grid grid-3" id="dashboard-stats">
@@ -2204,7 +2220,8 @@
           <div class="card card-red" style="border-left: 4px solid var(--red)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <div class="card-title" style="margin:0">⚠️ Bölgesel Kesintiler</div>
-              <select id="dash-kesinti-ilce" class="inp" style="flex: none; width: auto; min-width: 200px; max-width: max-content; padding:4px 8px; font-size:12px"
+              <select id="dash-kesinti-ilce" class="inp"
+                style="flex: none; width: auto; min-width: 200px; max-width: max-content; padding:4px 8px; font-size:12px"
                 onchange="loadDashKesinti()">
                 <option value="">İzmir Geneli</option>
                 <option value="ALİAĞA">Aliağa</option>
@@ -2463,7 +2480,7 @@
       </div>
       <div class="grid otobus-grid" style="grid-template-columns: 320px 320px 1fr; gap:16px; align-items: start">
         <!-- Hat arama -->
-        <div class="card card-terra" style="display:flex; flex-direction:column; height: 700px; padding: 12px">
+        <div class="card card-terra" style="display:flex; flex-direction:column; padding: 12px">
           <div class="card-title" style="margin-bottom: 6px; font-size: 10px">🛣️ Hat Sorgulama</div>
           <div style="display:flex; gap:6px; margin-bottom:10px">
             <input type="text" id="hat-search" class="inp" style="flex:1; height: 34px; font-size: 13px"
@@ -2483,7 +2500,7 @@
         </div>
 
         <!-- Durak arama -->
-        <div class="card card-blue" style="display:flex; flex-direction:column; height: 700px; padding: 12px">
+        <div class="card card-blue" style="display:flex; flex-direction:column; padding: 12px">
           <div class="card-title"
             style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; font-size: 10px">
             <span>🚏 Durak & Varış</span>
@@ -2518,9 +2535,10 @@
               Aktarmalar</button>
           </div>
 
-          <div class="card" style="padding:0;overflow:hidden;border-radius:var(--radius); height: 700px"
+          <div class="card"
+            style="padding:0;overflow:hidden;border-radius:var(--radius); min-height: 600px; height: 100%;"
             id="otobus-map-wrap">
-            <div id="otobus-map" style="height:100%; width:100%; z-index:1"></div>
+            <div id="otobus-map" style="height:100%; width:100%; z-index:1; min-height: 600px;"></div>
           </div>
 
           <div class="card" style="display:none;min-height:580px" id="otobus-saat-wrap">
@@ -2976,6 +2994,9 @@
       }
       if (id === 'vapur' && vapurMap) {
         setTimeout(() => vapurMap.invalidateSize(), 100);
+      }
+      if (id === 'otobus' && typeof otobusMap !== 'undefined' && otobusMap) {
+        setTimeout(() => otobusMap.invalidateSize(), 100);
       }
       if (window.innerWidth <= 900) document.getElementById('sidebar').classList.remove('open');
     }
@@ -3917,7 +3938,7 @@
       if (vapurRouteLine && vapurMap) { vapurMap.removeLayer(vapurRouteLine); }
       const kPier = iskeleler.find(i => (i.IskeleId || i.Id) == kalkis);
       const vPier = iskeleler.find(i => (i.IskeleId || i.Id) == varis);
-      
+
       if (kPier && vPier && kPier.Enlem && vPier.Enlem && vapurMap) {
         const latlngs = [
           [parseFloat(kPier.Enlem), parseFloat(kPier.Boylam)],
@@ -4321,6 +4342,9 @@
       document.getElementById('otobus-baglanti-wrap').style.display = tab === 'baglanti' ? 'block' : 'none';
       if (tab === 'saat' && selectedHatNo) loadOtobusSaatleri();
       if (tab === 'baglanti' && selectedHatNo) loadOtobusBaglanti();
+      if (tab === 'map' && typeof otobusMap !== 'undefined' && otobusMap) {
+        setTimeout(() => otobusMap.invalidateSize(), 100);
+      }
     }
 
     async function loadOtobusBaglanti() {
